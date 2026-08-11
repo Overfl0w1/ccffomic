@@ -1,4 +1,4 @@
-const CACHE = 'manyue-pwa-v2';
+const CACHE = 'manyue-pwa-v3';
 const APP_SHELL = [
   './',
   './index.html',

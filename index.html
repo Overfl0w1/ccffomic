@@ -74,6 +74,12 @@ textarea{width:100%;min-height:150px;border:1px solid var(--line);border-radius:
    <div class="setting"><span>搜索时并发全部源</span><input id="allSet" type="checkbox" checked></div>
   </div>
   <div class="card">
+   <div class="sectionTitle">专用代理</div>
+   <div class="muted">把你部署的 Cloudflare Worker 地址粘贴到这里，例如 https://manyue-proxy.xxxx.workers.dev 。设置一次后会永久保存在本机。专用代理用于 MangaDex API、封面和章节图片。</div>
+   <div class="setting"><span>Worker 地址</span><input id="proxyBaseSet" placeholder="https://...workers.dev"></div>
+   <button class="primary" id="saveProxyBtn" style="margin-top:10px">保存代理</button>
+  </div>
+  <div class="card">
    <div class="sectionTitle">API 兼容</div>
    <div class="muted">GitHub Pages 属于网页来源，部分第三方 API 会因 CORS 拒绝浏览器直接请求。本版 MangaDex API 会自动尝试：直连 → corsproxy.io → AllOrigins；无需额外设置。</div>
   </div>
@@ -117,8 +123,15 @@ const $=id=>document.getElementById(id), esc=s=>String(s??'').replace(/[&<>"']/g
 const now=()=>new Date().toISOString(), uid=()=>Math.random().toString(36).slice(2)+Date.now().toString(36);
 let st=load(), activePage='shelf', currentDetail=null, currentReader=null, pageIndex=0;
 
-function baseState(){return {sources:[],shelf:[],history:[],settings:{mode:'scroll',dir:'ltr',all:true},bookmarks:[],cache:{}}}
-function load(){try{return Object.assign(baseState(),JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){return baseState()}}
+function baseState(){return {sources:[],shelf:[],history:[],settings:{mode:'scroll',dir:'ltr',all:true,proxyBase:''},bookmarks:[],cache:{}}}
+function load(){
+ try{
+  const base=baseState(),raw=JSON.parse(localStorage.getItem(K)||'{}');
+  const merged=Object.assign(base,raw);
+  merged.settings=Object.assign(base.settings,raw.settings||{});
+  return merged;
+ }catch(e){return baseState()}
+}
 function save(){localStorage.setItem(K,JSON.stringify(st))}
 function toast(s){$('toast').textContent=s;$('toast').style.display='block';setTimeout(()=>$('toast').style.display='none',1800)}
 function go(p){activePage=p;document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===p));document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.page===p));$('pageTitle').textContent={shelf:'书架',search:'搜索',settings:'设置'}[p];render()}
@@ -167,13 +180,24 @@ async function syncAidokuRepos(){
  toast(`源列表刷新完成：新增 ${imported}，失败 ${failed}`);
 }
 
-function render(){renderSources();renderShelf();renderHistory();$('modeSet').value=st.settings.mode;$('dirSet').value=st.settings.dir;$('allSet').checked=st.settings.all}
+function render(){
+ renderSources();renderShelf();renderHistory();
+ $('modeSet').value=st.settings.mode;$('dirSet').value=st.settings.dir;$('allSet').checked=st.settings.all;
+ if($('proxyBaseSet'))$('proxyBaseSet').value=st.settings.proxyBase||'';
+}
 function renderSources(){
  const on=st.sources.filter(s=>s.enabled!==false);
  const executable=on.filter(s=>s.type==='mangadex'||s.type==='websource');
  $('sourceCount').textContent=`${on.length}（可搜索 ${executable.length}）`;
  $('sourceChips').innerHTML=executable.map(s=>`<button class="chip on" data-src="${esc(s.id)}">${esc(s.name)}</button>`).join('');
 }
+
+function ownProxy(url){
+ const b=String(st.settings.proxyBase||'').trim().replace(/\/+$/,'');
+ if(!b||!url)return '';
+ return b+'/proxy?url='+encodeURIComponent(url);
+}
+
 function wsrv(url,w=''){
  if(!url||String(url).startsWith('data:')||String(url).startsWith('blob:'))return url||'';
  let q='https://wsrv.nl/?url='+encodeURIComponent(url)+'&output=webp&q=88';
@@ -181,7 +205,7 @@ function wsrv(url,w=''){
  return q;
 }
 function imgChain(url,w=''){
- const arr=[url,wsrv(url,w)].filter(Boolean);
+ const arr=[ownProxy(url),url,wsrv(url,w)].filter(Boolean);
  return [...new Set(arr)];
 }
 function chainedImg(url,cls='',loading='lazy',w=''){
@@ -201,6 +225,11 @@ function renderHistory(){
  $('history').innerHTML=st.history.length?st.history.slice(0,60).map(h=>`<div class="row">${chainedImg(h.cover||'','thumb','lazy','140')}<div class="grow"><div class="rowTitle">${esc(h.title)}</div><div class="muted">${esc(h.chapter||'')} · ${new Date(h.time).toLocaleString()}</div></div><button class="secondary" onclick="resumeHistory('${h.id}')">继续</button></div>`).join(''):'<div class="empty">暂无阅读历史</div>'
 }
 $('modeSet').onchange=e=>{st.settings.mode=e.target.value;save()};$('dirSet').onchange=e=>{st.settings.dir=e.target.value;save()};$('allSet').onchange=e=>{st.settings.all=e.target.checked;save()};
+$('saveProxyBtn').onclick=()=>{
+ let v=$('proxyBaseSet').value.trim().replace(/\/+$/,'');
+ if(v && !/^https:\/\//i.test(v))return toast('Worker 地址必须以 https:// 开头');
+ st.settings.proxyBase=v;save();toast(v?'专用代理已保存':'已关闭专用代理');
+};
 
 $('searchBtn').onclick=searchAll;$('q').onkeydown=e=>{if(e.key==='Enter')searchAll()};
 async function searchAll(){
@@ -251,10 +280,11 @@ async function fetchTimeout(url,opt={},ms=12000){
 function apiProxyCandidates(url){
  if(!/^https:\/\/api\.mangadex\.org\//.test(url))return [url];
  return [
+   ownProxy(url),
    url,
    'https://corsproxy.io/?url='+encodeURIComponent(url),
    'https://api.allorigins.win/raw?url='+encodeURIComponent(url)
- ];
+ ].filter(Boolean);
 }
 async function jfetch(url,opt={}){
  let last;
@@ -374,7 +404,8 @@ function pageSaver(p){return typeof p==='string'?p:(p?.saver||p?.normal||'')}
 function cacheKey(p){return pageNormal(p)||pageSaver(p)}
 function cachedUrl(p){return st.cache[cacheKey(p)]||''}
 function pageCandidates(p){
- const raw=[cachedUrl(p),pageSaver(p),pageNormal(p),wsrv(pageSaver(p)),wsrv(pageNormal(p))].filter(Boolean);
+ const s=pageSaver(p),n=pageNormal(p);
+ const raw=[cachedUrl(p),ownProxy(s),ownProxy(n),s,n,wsrv(s),wsrv(n)].filter(Boolean);
  return [...new Set(raw)];
 }
 function imgTag(p,i){
@@ -392,7 +423,7 @@ $('prevBtn').onclick=()=>{if(st.settings.dir==='rtl')pageIndex=Math.min(currentR
 $('nextBtn').onclick=()=>{if(st.settings.dir==='rtl')pageIndex=Math.max(0,pageIndex-1);else pageIndex=Math.min(currentReader.pages.length-1,pageIndex+1);showSingle()}
 $('pageRange').oninput=e=>{pageIndex=+e.target.value-1;showSingle()}
 $('bookmarkBtn').onclick=()=>{if(!currentReader)return;st.bookmarks.unshift({id:uid(),title:currentReader.title,chapter:currentReader.chapter.chapter,page:pageIndex+1,time:now()});save();toast('已加入书签')}
-$('downloadBtn').onclick=async()=>{if(!currentReader)return;let ok=0;toast('开始缓存…');for(let p of currentReader.pages){let urls=[pageSaver(p),pageNormal(p),wsrv(pageSaver(p)),wsrv(pageNormal(p))].filter((x,i,a)=>x&&a.indexOf(x)===i);for(let u of urls){try{let r=await fetchTimeout(u,{referrerPolicy:'no-referrer'},10000);let b=await r.blob(),d=await blobData(b);st.cache[cacheKey(p)]=d;ok++;break}catch(e){}}if(ok%3===0)save()}save();applyReader();toast(`已缓存 ${ok}/${currentReader.pages.length} 页`)}
+$('downloadBtn').onclick=async()=>{if(!currentReader)return;let ok=0;toast('开始缓存…');for(let p of currentReader.pages){let urls=[ownProxy(pageSaver(p)),ownProxy(pageNormal(p)),pageSaver(p),pageNormal(p),wsrv(pageSaver(p)),wsrv(pageNormal(p))].filter((x,i,a)=>x&&a.indexOf(x)===i);for(let u of urls){try{let r=await fetchTimeout(u,{referrerPolicy:'no-referrer'},10000);let b=await r.blob(),d=await blobData(b);st.cache[cacheKey(p)]=d;ok++;break}catch(e){}}if(ok%3===0)save()}save();applyReader();toast(`已缓存 ${ok}/${currentReader.pages.length} 页`)}
 function blobData(b){return new Promise((res,rej)=>{let fr=new FileReader;fr.onload=()=>res(fr.result);fr.onerror=rej;fr.readAsDataURL(b)})}
 window.resumeHistory=id=>{let h=st.history.find(x=>x.id===id);if(h?.reader)openReader(h.reader)};
 
@@ -440,7 +471,7 @@ try{ensureBuiltins();render()}catch(e){
 <script>
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=2').catch(err => console.warn('Service Worker 注册失败', err));
+    navigator.serviceWorker.register('./sw.js?v=3').catch(err => console.warn('Service Worker 注册失败', err));
   });
 }
 </script>

@@ -1,11 +1,30 @@
-# 漫阅 PWA V2
+# 漫阅 PWA V3 + Cloudflare Worker
 
-本版修复 GitHub Pages 上 MangaDex 搜索显示 `Load failed`：
+这版针对“封面可显示，但章节图片仍加载失败”：
 
-- MangaDex API：直连失败后自动尝试 `corsproxy.io`。
-- 第二备用：`AllOrigins raw`。
-- 图片仍保留 no-referrer 与图片代理回退。
-- Service Worker 缓存版本升级为 `manyue-pwa-v2`，避免旧页面缓存。
+- PWA 新增“设置 → 专用代理 → Worker 地址”。
+- MangaDex API、封面、章节图片都优先走你自己的 Cloudflare Worker。
+- Worker 服务端代取图片，不受 Safari/PWA 的 CORS 与 Referer 限制。
+- Worker 仅允许你的 GitHub Pages 来源 `https://overfl0w1.github.io` 调用。
+- Cloudflare Workers Free 当前提供 100,000 次请求/天，响应体没有 Worker 层面的大小上限，个人漫画阅读足够使用。
 
-更新 GitHub Pages 时，把本 ZIP 解压后的文件覆盖上传到仓库根目录，然后等待 Pages 重新部署。
-如果 Safari 仍显示旧版本，可刷新两次；已经“添加到主屏幕”的旧 PWA 可完全关闭后重新打开。
+## 1. 更新 GitHub Pages
+把除了 `worker.js` 之外的 PWA 文件覆盖上传到原 GitHub 仓库。
+
+## 2. 手机上创建 Cloudflare Worker
+1. Safari 打开 Cloudflare Dashboard，注册/登录免费账号。
+2. Workers & Pages → Create application → Create Worker → Deploy。
+3. 打开 Worker → Edit Code。
+4. 删除示例代码，粘贴本包 `worker.js` 全部内容。
+5. Deploy。
+6. Cloudflare 会给出类似：
+   `https://manyue-proxy.<你的子域>.workers.dev`
+
+## 3. 漫阅里设置
+打开漫阅 → 设置 → 专用代理 → 粘贴上述 `https://...workers.dev` → 保存代理。
+
+之后重新搜索并打开章节。
+
+如果你的 GitHub 用户名不是 `overfl0w1`，需要把 `worker.js` 中：
+`https://overfl0w1.github.io`
+改成你实际的 `https://用户名.github.io`。
