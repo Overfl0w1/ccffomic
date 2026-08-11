@@ -74,6 +74,10 @@ textarea{width:100%;min-height:150px;border:1px solid var(--line);border-radius:
    <div class="setting"><span>搜索时并发全部源</span><input id="allSet" type="checkbox" checked></div>
   </div>
   <div class="card">
+   <div class="sectionTitle">API 兼容</div>
+   <div class="muted">GitHub Pages 属于网页来源，部分第三方 API 会因 CORS 拒绝浏览器直接请求。本版 MangaDex API 会自动尝试：直连 → corsproxy.io → AllOrigins；无需额外设置。</div>
+  </div>
+  <div class="card">
    <div class="sectionTitle">图片兼容</div>
    <div class="muted">MangaDex 会根据 Referer 返回防盗链占位图。本版已强制所有封面和章节图片使用 no-referrer；如果仍出现“MangaDex”占位图，说明宿主 WebView 覆盖了页面的 Referer 策略。</div>
   </div>
@@ -244,7 +248,24 @@ async function fetchTimeout(url,opt={},ms=12000){
   throw e;
  }finally{clearTimeout(timer)}
 }
-async function jfetch(url,opt={}){return (await fetchTimeout(url,opt,12000)).json()}
+function apiProxyCandidates(url){
+ if(!/^https:\/\/api\.mangadex\.org\//.test(url))return [url];
+ return [
+   url,
+   'https://corsproxy.io/?url='+encodeURIComponent(url),
+   'https://api.allorigins.win/raw?url='+encodeURIComponent(url)
+ ];
+}
+async function jfetch(url,opt={}){
+ let last;
+ for(const u of apiProxyCandidates(url)){
+   try{
+     const r=await fetchTimeout(u,opt,12000);
+     return await r.json();
+   }catch(e){last=e}
+ }
+ throw last||Error('Load failed');
+}
 function isHanText(s){return /[\u3400-\u9fff\uf900-\ufaff]/.test(String(s||''))}
 function localizedText(map){
  if(!map)return '';
@@ -419,7 +440,7 @@ try{ensureBuiltins();render()}catch(e){
 <script>
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Service Worker 注册失败', err));
+    navigator.serviceWorker.register('./sw.js?v=2').catch(err => console.warn('Service Worker 注册失败', err));
   });
 }
 </script>
