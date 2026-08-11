@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<meta name="referrer" content="no-referrer">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="漫阅">
+<meta name="mobile-web-app-capable" content="yes">
+
+<title>漫阅</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--text:#15171a;--sub:#777d87;--line:#e8eaf0;--accent:#5b5cf0;--danger:#df4b4b}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+button,input,select,textarea{font:inherit}button{cursor:pointer}.app{max-width:920px;margin:auto;min-height:100vh;padding:calc(14px + env(safe-area-inset-top)) 14px calc(92px + env(safe-area-inset-bottom))}
+.top{display:flex;align-items:center;justify-content:space-between;margin:4px 2px 16px}.title{font-size:30px;font-weight:900}.iconbtn{border:0;background:#fff;border-radius:16px;padding:11px 13px;box-shadow:0 3px 14px #0000000d}
+.page{display:none}.page.active{display:block}.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:16px;margin-bottom:14px}
+.sectionTitle{font-size:21px;font-weight:900;margin:0 0 12px}.muted{color:var(--sub);font-size:13px;line-height:1.5}.empty{padding:34px 12px;text-align:center;color:var(--sub)}
+.bottom{position:fixed;z-index:30;left:50%;transform:translateX(-50%);bottom:0;width:min(920px,100%);display:grid;grid-template-columns:repeat(3,1fr);background:#ffffffed;backdrop-filter:blur(18px);border-top:1px solid var(--line);padding:8px 10px calc(8px + env(safe-area-inset-bottom))}
+.nav{border:0;background:transparent;color:#858b95;font-weight:800;padding:9px 4px}.nav.active{color:var(--accent)}.nav b{display:block;font-size:21px;margin-bottom:2px}
+.searchbar{display:flex;gap:8px;background:#fff;border:1px solid var(--line);padding:8px;border-radius:18px;position:sticky;top:calc(8px + env(safe-area-inset-top));z-index:8}
+.searchbar input{flex:1;border:0;outline:0;padding:8px 10px;font-size:17px;min-width:0}.primary{border:0;background:var(--accent);color:#fff;border-radius:13px;padding:10px 15px;font-weight:800}.secondary{border:0;background:#f0f1f5;color:#333;border-radius:13px;padding:10px 15px;font-weight:800}.danger{background:#fff0f0;color:var(--danger)}
+.sourcechips{display:flex;gap:8px;overflow:auto;padding:10px 2px 2px}.chip{white-space:nowrap;border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 12px;font-size:13px}.chip.on{background:#ececff;border-color:#c9c9ff;color:#4142d6}
+.results{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}.manga{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden}.cover{aspect-ratio:3/4;background:#e9ebef;position:relative;overflow:hidden}.cover img{width:100%;height:100%;object-fit:cover}.badge{position:absolute;left:8px;bottom:8px;background:#000b;color:#fff;padding:4px 7px;border-radius:8px;font-size:11px}.mangaBody{padding:10px}.mangaName{font-weight:900;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.latest{color:var(--accent);font-size:12px;font-weight:800;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.meta{color:var(--sub);font-size:11px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shelf{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.shelf .mangaName{font-size:14px}
+.row{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}.row:last-child{border:0}.thumb{width:54px;height:72px;object-fit:cover;border-radius:9px;background:#eee}.grow{flex:1;min-width:0}.rowTitle{font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.setting{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}.setting:last-child{border:0}.setting input,.setting select{border:1px solid var(--line);border-radius:12px;padding:9px;max-width:55%}
+.modal{display:none;position:fixed;inset:0;background:#0008;z-index:60;align-items:flex-end}.modal.show{display:flex}.sheet{width:min(920px,100%);margin:auto;background:#fff;border-radius:24px 24px 0 0;max-height:88vh;overflow:auto;padding:18px 16px calc(24px + env(safe-area-inset-bottom))}
+.detailHead{display:flex;gap:16px}.detailCover{width:120px;aspect-ratio:3/4;object-fit:cover;border-radius:14px;background:#eee}.chapters{margin-top:14px}.chapter{display:flex;justify-content:space-between;gap:10px;padding:13px 2px;border-bottom:1px solid var(--line)}
+.reader{display:none;position:fixed;inset:0;background:#111;z-index:100;color:#fff;overflow:auto}.reader.show{display:block}.readerTop{position:fixed;top:0;left:0;right:0;z-index:4;display:flex;align-items:center;gap:10px;padding:calc(8px + env(safe-area-inset-top)) 10px 8px;padding-left:max(76px,calc(10px + env(safe-area-inset-left)));background:#111d;backdrop-filter:blur(10px)}.readerTop .rtitle{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:800}.readerTop button{border:0;background:#ffffff1d;color:#fff;border-radius:12px;padding:9px 11px}.pages{padding-top:64px}.pages.scroll img{display:block;width:min(100%,900px);height:auto;min-height:120px;margin:auto;background:#151515}.pages.single{height:100vh;display:flex;align-items:center;justify-content:center;padding:70px 0 55px;overflow:hidden}.pages.single img{max-width:100%;max-height:100%;object-fit:contain}.readerBottom{position:fixed;bottom:0;left:0;right:0;z-index:5;background:#111d;padding:8px 12px calc(8px + env(safe-area-inset-bottom));display:flex;gap:8px;align-items:center}.readerBottom input{flex:1}.readerBottom button{border:0;background:#ffffff1d;color:#fff;border-radius:11px;padding:8px 10px}
+.toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);z-index:200;background:#111e;color:#fff;padding:10px 14px;border-radius:12px;display:none;max-width:80%;text-align:center}
+textarea{width:100%;min-height:150px;border:1px solid var(--line);border-radius:14px;padding:10px}
+@media(max-width:560px){.results{grid-template-columns:repeat(2,minmax(0,1fr))}.shelf{grid-template-columns:repeat(3,minmax(0,1fr))}.app{padding-left:10px;padding-right:10px}.mangaBody{padding:8px}.detailCover{width:100px}}
+</style>
+</head>
+<body>
+<div class="app">
+ <header class="top"><div class="title" id="pageTitle">书架</div><button class="iconbtn" id="refreshBtn">↻</button></header>
+
+ <section id="shelf" class="page active">
+  <div id="shelfGrid" class="shelf"></div>
+  <div id="shelfEmpty" class="card empty">书架还是空的。去搜索漫画，点“加入书架”。</div>
+ </section>
+
+ <section id="search" class="page">
+  <div class="searchbar"><input id="q" placeholder="搜索漫画"><button class="primary" id="searchBtn">搜索</button></div>
+  <div id="sourceChips" class="sourcechips"></div>
+  <div id="searchStatus" class="muted" style="padding:10px 4px"></div>
+  <div id="results" class="results"></div>
+ </section>
+
+ <section id="settings" class="page">
+  <div class="card">
+   <div class="sectionTitle">源管理</div>
+   <div class="muted">已内置 MangaDex、Aidoku 中文源仓库和 Aidoku Community 仓库地址，无需手动导入。为避免启动白屏，不会在打开 App 时联网刷新；需要查看最新 AIX 源列表时点“刷新内置源列表”。纯网页仍不能直接执行 .aix。</div>
+   <div class="setting"><span>已启用源</span><b id="sourceCount">0</b></div>
+   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+    <button class="primary" id="importSourceBtn">导入源</button>
+    <button class="secondary" id="syncAidokuBtn">刷新内置源列表</button>
+    <button class="secondary" id="addBuiltinBtn">恢复内置源</button>
+    <button class="secondary danger" id="clearSourcesBtn">清空源</button>
+   </div>
+   <input type="file" id="sourceFile" accept=".json,application/json" hidden>
+  </div>
+  <div class="card"><div class="sectionTitle">历史记录</div><div id="history"></div></div>
+  <div class="card">
+   <div class="sectionTitle">阅读设置</div>
+   <div class="setting"><span>默认模式</span><select id="modeSet"><option value="scroll">长条</option><option value="single">单页</option></select></div>
+   <div class="setting"><span>翻页方向</span><select id="dirSet"><option value="ltr">左 → 右</option><option value="rtl">右 → 左（日漫）</option></select></div>
+   <div class="setting"><span>搜索时并发全部源</span><input id="allSet" type="checkbox" checked></div>
+  </div>
+  <div class="card">
+   <div class="sectionTitle">图片兼容</div>
+   <div class="muted">MangaDex 会根据 Referer 返回防盗链占位图。本版已强制所有封面和章节图片使用 no-referrer；如果仍出现“MangaDex”占位图，说明宿主 WebView 覆盖了页面的 Referer 策略。</div>
+  </div>
+  <div class="card">
+   <div class="sectionTitle">安装到 iPhone</div>
+   <div class="muted">用 Safari 打开部署后的网址，点“分享” → “添加到主屏幕”。之后会像普通 App 一样独立全屏运行。PWA 必须通过 HTTPS 访问，直接打开本地 html 文件不能安装。</div>
+  </div>
+  <div class="card"><div class="sectionTitle">本地漫画</div><div class="muted">可一次选择多张图片作为一个章节。</div><button class="secondary" id="localBtn" style="margin-top:10px">导入本地图片</button><input id="localFiles" type="file" accept="image/*" multiple hidden></div>
+ </section>
+</div>
+
+<nav class="bottom">
+ <button class="nav active" data-page="shelf"><b>▦</b>书架</button>
+ <button class="nav" data-page="search"><b>⌕</b>搜索</button>
+ <button class="nav" data-page="settings"><b>⚙</b>设置</button>
+</nav>
+
+<div id="detailModal" class="modal"><div class="sheet" id="detailSheet"></div></div>
+<div id="sourceModal" class="modal"><div class="sheet">
+ <div class="sectionTitle">导入在线源</div>
+ <div class="muted">粘贴 JSON 源列表地址。支持本应用的 WebSource 格式；Aidoku index.json 会导入为“仅识别”条目。</div>
+ <input id="sourceUrl" style="width:100%;margin:12px 0;border:1px solid var(--line);border-radius:14px;padding:12px" placeholder="https://.../sources.json">
+ <textarea id="sourceJson" placeholder='也可以直接粘贴 JSON'></textarea>
+ <div style="display:flex;gap:8px;margin-top:10px"><button class="primary" id="doImportUrl">导入</button><button class="secondary" id="closeSourceModal">取消</button></div>
+</div></div>
+
+<div id="reader" class="reader">
+ <div class="readerTop"><button id="readerClose">‹</button><div class="rtitle" id="readerTitle"></div><button id="bookmarkBtn">☆</button><button id="modeBtn">长条</button><button id="downloadBtn">缓存</button></div>
+ <div id="pages" class="pages scroll"></div>
+ <div class="readerBottom" id="readerBottom"><button id="prevBtn">上一页</button><input id="pageRange" type="range" min="1" max="1" value="1"><span id="pageText">1/1</span><button id="nextBtn">下一页</button></div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+const K='phone_manga_reader_v1';
+const $=id=>document.getElementById(id), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const now=()=>new Date().toISOString(), uid=()=>Math.random().toString(36).slice(2)+Date.now().toString(36);
+let st=load(), activePage='shelf', currentDetail=null, currentReader=null, pageIndex=0;
+
+function baseState(){return {sources:[],shelf:[],history:[],settings:{mode:'scroll',dir:'ltr',all:true},bookmarks:[],cache:{}}}
+function load(){try{return Object.assign(baseState(),JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){return baseState()}}
+function save(){localStorage.setItem(K,JSON.stringify(st))}
+function toast(s){$('toast').textContent=s;$('toast').style.display='block';setTimeout(()=>$('toast').style.display='none',1800)}
+function go(p){activePage=p;document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===p));document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.page===p));$('pageTitle').textContent={shelf:'书架',search:'搜索',settings:'设置'}[p];render()}
+document.querySelectorAll('.nav').forEach(b=>b.onclick=()=>go(b.dataset.page));
+
+const builtinMangaDex={
+ id:'mangadex',name:'MangaDex',type:'mangadex',enabled:true,
+ homepage:'https://mangadex.org'
+};
+const BUILTIN_AIDOKU_REPOS=[
+ {id:'repo-aidoku-zh',name:'Aidoku 中文源',type:'aidokuRepo',enabled:true,base:'https://cdn.jsdelivr.net/gh/suiyuran/aidoku-zh-sources@main/public/'},
+ {id:'repo-aidoku-community',name:'Aidoku Community',type:'aidokuRepo',enabled:true,base:'https://ghfast.top/https://raw.githubusercontent.com/Skittyblock/aidoku-community-sources/gh-pages/'}
+];
+function ensureBuiltins(){
+ if(!st.sources.some(x=>x.id==='mangadex'))st.sources.push({...builtinMangaDex});
+ for(const r of BUILTIN_AIDOKU_REPOS){
+   const old=st.sources.find(x=>x.id===r.id);
+   if(!old) st.sources.push({...r,loaded:false});
+   else Object.assign(old,{name:r.name,type:r.type,base:r.base,enabled:true});
+ }
+ save();
+}
+function addBuiltin(){try{ensureBuiltins();render()}catch(e){
+ console.error(e);
+ try{localStorage.removeItem(K)}catch(_){}
+ st=baseState();ensureBuiltins();render();
+ toast('已恢复本地数据结构');
+}toast('内置源已恢复')}
+$('addBuiltinBtn').onclick=addBuiltin;$('syncAidokuBtn').onclick=syncAidokuRepos;
+async function syncAidokuRepos(){
+ $('syncAidokuBtn').disabled=true;toast('正在刷新两个内置源仓库…');
+ let imported=0,failed=0;
+ for(const repo of BUILTIN_AIDOKU_REPOS){
+   let data=null;
+   for(const fn of ['index.min.json','index.json']){
+     try{
+       const r=await fetchTimeout(repo.base+fn,{},8000);
+       data=await r.json();break;
+     }catch(e){}
+   }
+   if(data){
+     try{imported+=importSources(data,repo.id,true)||0}catch(e){failed++}
+   }else failed++;
+ }
+ $('syncAidokuBtn').disabled=false;save();render();
+ toast(`源列表刷新完成：新增 ${imported}，失败 ${failed}`);
+}
+
+function render(){renderSources();renderShelf();renderHistory();$('modeSet').value=st.settings.mode;$('dirSet').value=st.settings.dir;$('allSet').checked=st.settings.all}
+function renderSources(){
+ const on=st.sources.filter(s=>s.enabled!==false);
+ const executable=on.filter(s=>s.type==='mangadex'||s.type==='websource');
+ $('sourceCount').textContent=`${on.length}（可搜索 ${executable.length}）`;
+ $('sourceChips').innerHTML=executable.map(s=>`<button class="chip on" data-src="${esc(s.id)}">${esc(s.name)}</button>`).join('');
+}
+function wsrv(url,w=''){
+ if(!url||String(url).startsWith('data:')||String(url).startsWith('blob:'))return url||'';
+ let q='https://wsrv.nl/?url='+encodeURIComponent(url)+'&output=webp&q=88';
+ if(w)q+='&w='+w;
+ return q;
+}
+function imgChain(url,w=''){
+ const arr=[url,wsrv(url,w)].filter(Boolean);
+ return [...new Set(arr)];
+}
+function chainedImg(url,cls='',loading='lazy',w=''){
+ const arr=imgChain(url,w), first=arr.shift()||'';
+ return `<img class="${cls}" src="${esc(first)}" loading="${loading}" referrerpolicy="no-referrer" data-chain="${encodeURIComponent(JSON.stringify(arr))}" onerror="appAnyImgError(this)">`;
+}
+window.appAnyImgError=function(img){
+ let arr=[];try{arr=JSON.parse(decodeURIComponent(img.dataset.chain||'%5B%5D'))}catch(e){}
+ if(arr.length){const next=arr.shift();img.dataset.chain=encodeURIComponent(JSON.stringify(arr));img.src=next;return}
+ img.onerror=null;img.style.opacity='.25';img.alt='图片加载失败';
+};
+function renderShelf(){
+ const el=$('shelfGrid');$('shelfEmpty').style.display=st.shelf.length?'none':'block';
+ el.innerHTML=st.shelf.map(m=>`<div class="manga" onclick="openShelf('${m.key}')"><div class="cover">${chainedImg(m.cover||'','','lazy','360')}<span class="badge">${esc(m.sourceName||'')}</span></div><div class="mangaBody"><div class="mangaName">${esc(m.title)}</div><div class="latest">${esc(m.latest||'未读取最新章节')}</div><div class="meta">${m.progress?`读到 ${esc(m.progress)}`:'未开始'}</div></div></div>`).join('')
+}
+function renderHistory(){
+ $('history').innerHTML=st.history.length?st.history.slice(0,60).map(h=>`<div class="row">${chainedImg(h.cover||'','thumb','lazy','140')}<div class="grow"><div class="rowTitle">${esc(h.title)}</div><div class="muted">${esc(h.chapter||'')} · ${new Date(h.time).toLocaleString()}</div></div><button class="secondary" onclick="resumeHistory('${h.id}')">继续</button></div>`).join(''):'<div class="empty">暂无阅读历史</div>'
+}
+$('modeSet').onchange=e=>{st.settings.mode=e.target.value;save()};$('dirSet').onchange=e=>{st.settings.dir=e.target.value;save()};$('allSet').onchange=e=>{st.settings.all=e.target.checked;save()};
+
+$('searchBtn').onclick=searchAll;$('q').onkeydown=e=>{if(e.key==='Enter')searchAll()};
+async function searchAll(){
+ const q=$('q').value.trim();if(!q)return;
+ const sources=st.sources.filter(s=>s.enabled!==false && (s.type==='mangadex'||s.type==='websource'));
+ if(!sources.length){$('searchStatus').textContent='没有可执行的 Web 源。可在设置中添加 MangaDex 或导入 WebSource JSON。';return}
+ $('results').innerHTML='';$('searchStatus').textContent=`正在搜索 ${sources.length} 个源…`;
+ let total=0;
+ await Promise.allSettled(sources.map(async s=>{
+   try{
+    const rows=await adapterSearch(s,q);total+=rows.length;appendResults(s,rows);
+   }catch(e){appendSourceError(s,e)}
+ }));
+ $('searchStatus').textContent=`搜索完成，共 ${total} 个结果。`;
+}
+function appendResults(s,rows){
+ const html=rows.map(m=>`<div class="manga" onclick='openResult(${JSON.stringify(JSON.stringify({...m,sourceId:s.id,sourceName:s.name}))})'><div class="cover">${chainedImg(m.cover||'','','lazy','420')}<span class="badge">${esc(s.name)}</span></div><div class="mangaBody"><div class="mangaName">${esc(m.title)}</div><div class="latest">${esc(m.latest||'最新章节待进入详情获取')}</div><div class="meta">${esc(m.author||'')}${m.updated?' · '+esc(m.updated):''}</div></div></div>`).join('');
+ $('results').insertAdjacentHTML('beforeend',html)
+}
+function appendSourceError(s,e){$('results').insertAdjacentHTML('beforeend',`<div class="card"><b>${esc(s.name)}</b><div class="muted">搜索失败：${esc(e.message||e)}</div></div>`)}
+
+async function adapterSearch(s,q){
+ if(s.type==='mangadex')return mdSearch(q);
+ if(s.type==='websource')return genericSearch(s,q);
+ throw Error('该源格式当前不能在浏览器直接执行');
+}
+async function adapterDetail(s,m){
+ if(s.type==='mangadex')return mdDetail(m);
+ if(s.type==='websource')return genericDetail(s,m);
+ throw Error('不支持详情');
+}
+async function adapterPages(s,m,ch){
+ if(s.type==='mangadex')return mdPages(ch);
+ if(s.type==='websource')return genericPages(s,m,ch);
+ throw Error('不支持章节图片');
+}
+async function fetchTimeout(url,opt={},ms=12000){
+ const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),ms);
+ try{
+  const r=await fetch(url,{...opt,signal:ctl.signal});
+  if(!r.ok)throw Error(`HTTP ${r.status}`);
+  return r;
+ }catch(e){
+  if(e?.name==='AbortError')throw Error('请求超时');
+  throw e;
+ }finally{clearTimeout(timer)}
+}
+async function jfetch(url,opt={}){return (await fetchTimeout(url,opt,12000)).json()}
+function isHanText(s){return /[\u3400-\u9fff\uf900-\ufaff]/.test(String(s||''))}
+function localizedText(map){
+ if(!map)return '';
+ return map['zh-hans']||map['zh-cn']||map['zh']||map['zh-hk']||map['zh-hant']||map['zh-tw']||map['en']||Object.values(map)[0]||'';
+}
+function mdChineseTitle(attr){
+ const direct=[attr?.title?.['zh-hans'],attr?.title?.['zh-cn'],attr?.title?.['zh'],attr?.title?.['zh-hk'],attr?.title?.['zh-hant'],attr?.title?.['zh-tw']].find(Boolean);
+ if(direct)return direct;
+ for(const x of (attr?.altTitles||[])){
+   const v=x?.['zh-hans']||x?.['zh-cn']||x?.['zh']||x?.['zh-hk']||x?.['zh-hant']||x?.['zh-tw'];
+   if(v)return v;
+ }
+ const anyChinese=[...Object.values(attr?.title||{}),...(attr?.altTitles||[]).flatMap(x=>Object.values(x||{}))].find(isHanText);
+ return anyChinese||localizedText(attr?.title)||'未命名';
+}
+function chineseAuthor(s){
+ s=String(s||'').trim();
+ const m=s.match(/[（(]([^()（）]*[\u3400-\u9fff][^()（）]*)[）)]/);
+ if(m)return m[1].trim();
+ return s;
+}
+function cleanChapterTitle(s){return isHanText(s)?String(s).trim():''}
+async function mdLatest(id){
+ try{
+  const j=await jfetch(`https://api.mangadex.org/manga/${id}/feed?limit=1&translatedLanguage[]=zh&translatedLanguage[]=zh-hk&translatedLanguage[]=en&order[chapter]=desc&includeFutureUpdates=0`);
+  const c=j.data?.[0];
+  if(!c)return {latest:'暂无章节',updated:''};
+  return {latest:`更新至 ${c.attributes.chapter||'?'} 话`,updated:(c.attributes.publishAt||'').slice(0,10)};
+ }catch(e){return {latest:'最新章节获取失败',updated:''}}
+}
+async function mdSearch(q){
+ const u='https://api.mangadex.org/manga?limit=24&includes[]=cover_art&includes[]=author&order[relevance]=desc&title='+encodeURIComponent(q);
+ const j=await jfetch(u);
+ const base=j.data.map(x=>{let cv=x.relationships.find(r=>r.type==='cover_art'),au=x.relationships.find(r=>r.type==='author');let fn=cv?.attributes?.fileName;return {id:x.id,title:mdChineseTitle(x.attributes),cover:fn?`https://uploads.mangadex.org/covers/${x.id}/${fn}.256.jpg`:'',author:chineseAuthor(au?.attributes?.name||''),status:x.attributes.status||'',latest:'正在获取最新章节…',updated:''}});
+ const latest=await Promise.all(base.map(x=>mdLatest(x.id)));
+ return base.map((x,i)=>({...x,...latest[i]}));
+}
+async function mdDetail(m){
+ const [mj,cj]=await Promise.all([
+  jfetch(`https://api.mangadex.org/manga/${m.id}?includes[]=cover_art&includes[]=author`),
+  jfetch(`https://api.mangadex.org/manga/${m.id}/feed?limit=100&translatedLanguage[]=zh&translatedLanguage[]=zh-hk&translatedLanguage[]=en&order[chapter]=desc&includeFutureUpdates=0`)
+ ]);
+ const x=mj.data;
+ const desc=localizedText(x.attributes.description)||'';
+ const title=mdChineseTitle(x.attributes);
+ const chapters=cj.data.map(c=>({id:c.id,title:cleanChapterTitle(c.attributes.title||''),chapter:c.attributes.chapter||'?',volume:c.attributes.volume||'',updated:(c.attributes.publishAt||'').slice(0,10)}));
+ return {...m,title,description:desc,status:x.attributes.status||m.status,chapters,latest:chapters[0]?`更新至 ${chapters[0].chapter} 话`:'暂无章节'};
+}
+async function mdPages(ch){
+ const j=await jfetch(`https://api.mangadex.org/at-home/server/${ch.id}?forcePort443=false`);
+ const b=j.baseUrl,h=j.chapter.hash;
+ const normal=j.chapter.data||[], saver=j.chapter.dataSaver||[];
+ return normal.map((f,i)=>({
+   normal:`${b}/data/${h}/${f}`,
+   saver:saver[i]?`${b}/data-saver/${h}/${saver[i]}`:`${b}/data/${h}/${f}`
+ }));
+}
+function pathGet(o,path){return String(path||'').split('.').filter(Boolean).reduce((a,k)=>a?.[k],o)}
+function tpl(s,vars){return String(s).replace(/\{(\w+)\}/g,(_,k)=>encodeURIComponent(vars[k]??''))}
+async function genericSearch(s,q){
+ const j=await jfetch(tpl(s.search.url,{q}),{headers:s.headers||{}});
+ const arr=pathGet(j,s.search.items)||[];
+ return arr.map(x=>({id:pathGet(x,s.search.map.id),title:pathGet(x,s.search.map.title),cover:pathGet(x,s.search.map.cover),author:pathGet(x,s.search.map.author),latest:pathGet(x,s.search.map.latest),updated:pathGet(x,s.search.map.updated),raw:x}))
+}
+async function genericDetail(s,m){
+ const j=await jfetch(tpl(s.detail.url,{id:m.id}),{headers:s.headers||{}});
+ const x=pathGet(j,s.detail.item)||j, arr=pathGet(x,s.detail.chapters)||[];
+ return {...m,description:pathGet(x,s.detail.description)||'',chapters:arr.map(c=>({id:pathGet(c,s.detail.chapterMap.id),chapter:pathGet(c,s.detail.chapterMap.chapter),title:pathGet(c,s.detail.chapterMap.title),updated:pathGet(c,s.detail.chapterMap.updated)})),latest:pathGet(x,s.detail.latest)||m.latest}
+}
+async function genericPages(s,m,ch){
+ const j=await jfetch(tpl(s.pages.url,{id:m.id,chapterId:ch.id}),{headers:s.headers||{}});
+ return pathGet(j,s.pages.items)||[]
+}
+
+window.openResult=async raw=>{let m=JSON.parse(raw);await openDetail(m)};
+async function openShelf(key){let m=st.shelf.find(x=>x.key===key);if(m)await openDetail(m)}
+async function openDetail(m){
+ const s=st.sources.find(x=>x.id===m.sourceId);if(!s)return toast('对应源已删除');
+ $('detailSheet').innerHTML='<div class="empty">正在加载详情…</div>';$('detailModal').classList.add('show');
+ try{
+  const d=await adapterDetail(s,m);currentDetail=d;
+  const key=`${s.id}:${d.id}`,inShelf=st.shelf.some(x=>x.key===key);
+  $('detailSheet').innerHTML=`<div class="detailHead">${chainedImg(d.cover||'','detailCover','eager','360')}<div class="grow"><div class="sectionTitle">${esc(d.title)}</div><div class="muted">${esc(d.author||'')} · ${esc(s.name)}</div><div style="margin-top:8px;color:var(--accent);font-weight:800">${esc(d.latest||'')}</div><div style="margin-top:12px"><button class="primary" onclick="toggleShelf()">${inShelf?'移出书架':'加入书架'}</button> <button class="secondary" onclick="closeDetail()">关闭</button></div></div></div><p class="muted">${esc(d.description||'')}</p><div class="chapters"><div class="sectionTitle">章节</div>${(d.chapters||[]).map((c,i)=>`<div class="chapter" onclick="readChapter(${i})"><span>第 ${esc(c.chapter||'?')} 话 ${esc(c.title||'')}</span><span class="muted">${esc(c.updated||'')}</span></div>`).join('')||'<div class="empty">暂无章节</div>'}</div>`;
+ }catch(e){$('detailSheet').innerHTML=`<div class="sectionTitle">加载失败</div><div class="muted">${esc(e.message||e)}</div><button class="secondary" onclick="closeDetail()" style="margin-top:12px">关闭</button>`}
+}
+window.closeDetail=()=>{$('detailModal').classList.remove('show')};$('detailModal').onclick=e=>{if(e.target===$('detailModal'))closeDetail()};
+window.toggleShelf=()=>{if(!currentDetail)return;let key=`${currentDetail.sourceId}:${currentDetail.id}`,i=st.shelf.findIndex(x=>x.key===key);if(i>=0)st.shelf.splice(i,1);else st.shelf.unshift({...currentDetail,key,chapters:undefined,progress:''});save();render();openDetail(currentDetail)}
+window.readChapter=async i=>{
+ const d=currentDetail,ch=d.chapters[i],s=st.sources.find(x=>x.id===d.sourceId);if(!ch)return;
+ try{toast('正在加载章节…');let pages=await adapterPages(s,d,ch);openReader({...d,chapter:ch,pages})}catch(e){toast('章节加载失败：'+(e.message||e))}
+}
+function openReader(r){
+ currentReader=r;pageIndex=0;$('reader').classList.add('show');$('readerTitle').textContent=`${r.title} · 第 ${r.chapter.chapter} 话`;
+ st.history=st.history.filter(h=>!(h.sourceId===r.sourceId&&h.mangaId===r.id&&h.chapterId===r.chapter.id));
+ st.history.unshift({id:uid(),sourceId:r.sourceId,mangaId:r.id,chapterId:r.chapter.id,title:r.title,cover:r.cover,chapter:`第 ${r.chapter.chapter} 话`,time:now(),reader:r});
+ st.history=st.history.slice(0,100);let sh=st.shelf.find(x=>x.key===`${r.sourceId}:${r.id}`);if(sh)sh.progress=`第 ${r.chapter.chapter} 话`;save();render();applyReader()
+}
+function applyReader(){
+ let mode=st.settings.mode,p=$('pages');$('modeBtn').textContent=mode==='scroll'?'长条':'单页';p.className='pages '+mode;
+ $('readerBottom').style.display=mode==='single'?'flex':'none';
+ if(mode==='scroll'){p.innerHTML=currentReader.pages.map((u,i)=>imgTag(u,i).replace('<img ','<img loading="'+(i<2?'eager':'lazy')+'" ')).join('')}
+ else showSingle()
+}
+function pageNormal(p){return typeof p==='string'?p:(p?.normal||p?.saver||'')}
+function pageSaver(p){return typeof p==='string'?p:(p?.saver||p?.normal||'')}
+function cacheKey(p){return pageNormal(p)||pageSaver(p)}
+function cachedUrl(p){return st.cache[cacheKey(p)]||''}
+function pageCandidates(p){
+ const raw=[cachedUrl(p),pageSaver(p),pageNormal(p),wsrv(pageSaver(p)),wsrv(pageNormal(p))].filter(Boolean);
+ return [...new Set(raw)];
+}
+function imgTag(p,i){
+ const arr=pageCandidates(p), primary=arr.shift()||'';
+ return `<img src="${esc(primary)}" referrerpolicy="no-referrer" data-chain="${encodeURIComponent(JSON.stringify(arr))}" data-i="${i}" onerror="appReaderImgError(this)">`;
+}
+window.appReaderImgError=function(img){
+ let arr=[];try{arr=JSON.parse(decodeURIComponent(img.dataset.chain||'%5B%5D'))}catch(e){}
+ if(arr.length){const next=arr.shift();img.dataset.chain=encodeURIComponent(JSON.stringify(arr));img.src=next;return}
+ img.onerror=null;img.style.minHeight='45vh';img.style.opacity='.35';img.alt='该页图片加载失败';
+};
+function showSingle(){let a=currentReader.pages,n=a.length;if(!n)return;$('pages').innerHTML=imgTag(a[pageIndex],pageIndex);$('pageRange').max=n;$('pageRange').value=pageIndex+1;$('pageText').textContent=`${pageIndex+1}/${n}`}
+$('readerClose').onclick=()=>{$('reader').classList.remove('show');currentReader=null};$('modeBtn').onclick=()=>{st.settings.mode=st.settings.mode==='scroll'?'single':'scroll';save();applyReader()};
+$('prevBtn').onclick=()=>{if(st.settings.dir==='rtl')pageIndex=Math.min(currentReader.pages.length-1,pageIndex+1);else pageIndex=Math.max(0,pageIndex-1);showSingle()}
+$('nextBtn').onclick=()=>{if(st.settings.dir==='rtl')pageIndex=Math.max(0,pageIndex-1);else pageIndex=Math.min(currentReader.pages.length-1,pageIndex+1);showSingle()}
+$('pageRange').oninput=e=>{pageIndex=+e.target.value-1;showSingle()}
+$('bookmarkBtn').onclick=()=>{if(!currentReader)return;st.bookmarks.unshift({id:uid(),title:currentReader.title,chapter:currentReader.chapter.chapter,page:pageIndex+1,time:now()});save();toast('已加入书签')}
+$('downloadBtn').onclick=async()=>{if(!currentReader)return;let ok=0;toast('开始缓存…');for(let p of currentReader.pages){let urls=[pageSaver(p),pageNormal(p),wsrv(pageSaver(p)),wsrv(pageNormal(p))].filter((x,i,a)=>x&&a.indexOf(x)===i);for(let u of urls){try{let r=await fetchTimeout(u,{referrerPolicy:'no-referrer'},10000);let b=await r.blob(),d=await blobData(b);st.cache[cacheKey(p)]=d;ok++;break}catch(e){}}if(ok%3===0)save()}save();applyReader();toast(`已缓存 ${ok}/${currentReader.pages.length} 页`)}
+function blobData(b){return new Promise((res,rej)=>{let fr=new FileReader;fr.onload=()=>res(fr.result);fr.onerror=rej;fr.readAsDataURL(b)})}
+window.resumeHistory=id=>{let h=st.history.find(x=>x.id===id);if(h?.reader)openReader(h.reader)};
+
+$('refreshBtn').onclick=()=>{if(activePage==='shelf')refreshShelf();else render()}
+async function refreshShelf(){
+ let list=[...st.shelf];toast('正在检查更新…');for(let m of list){let s=st.sources.find(x=>x.id===m.sourceId);if(!s)continue;try{let d=await adapterDetail(s,m),x=st.shelf.find(z=>z.key===m.key);if(x){x.latest=d.latest;x.updated=now()}}catch(e){} }save();render();toast('更新检查完成')
+}
+
+$('sourceModal').onclick=e=>{if(e.target===$('sourceModal'))$('sourceModal').classList.remove('show')};$('importSourceBtn').onclick=()=>$('sourceModal').classList.add('show');$('closeSourceModal').onclick=()=>$('sourceModal').classList.remove('show');
+$('doImportUrl').onclick=async()=>{
+ try{
+  let txt=$('sourceJson').value.trim();if(!txt){let u=$('sourceUrl').value.trim();if(!u)throw Error('请输入地址或 JSON');txt=await (await fetchTimeout(u,{},10000)).text()}
+  importSources(JSON.parse(txt));$('sourceModal').classList.remove('show')
+ }catch(e){toast('导入失败：'+(e.message||e))}
+}
+$('sourceFile').onchange=async e=>{try{importSources(JSON.parse(await e.target.files[0].text()))}catch(x){toast('文件格式错误')}};
+function importSources(j,repoId='',silent=false){
+ let arr=Array.isArray(j)?j:(j.sources||j.data||[]);
+ if(!Array.isArray(arr))throw Error('找不到 sources 数组');
+ let n=0;
+ for(let x of arr){
+  let s;
+  if(x.type==='websource'&&x.search&&x.detail&&x.pages)s=x;
+  else if(x.id&&(x.file||x.version||x.lang))s={id:(repoId?repoId+':':'')+x.id,name:x.name||x.id,type:'aidoku',enabled:true,file:x.file||'',icon:x.icon||'',repoId};
+  else continue;
+  if(!st.sources.some(z=>z.id===s.id)){st.sources.push(s);n++}
+ }
+ save();render();if(!silent)toast(`导入 ${n} 个源`);return n
+}
+$('clearSourcesBtn').onclick=()=>{if(confirm('清空全部源？')){st.sources=[];save();render()}};
+$('localBtn').onclick=()=>$('localFiles').click();$('localFiles').onchange=async e=>{
+ let fs=[...e.target.files].sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true}));if(!fs.length)return;let pages=[];for(let f of fs)pages.push(await blobData(f));let title=prompt('漫画名称','本地漫画')||'本地漫画',id=uid(),m={key:'local:'+id,id,sourceId:'local',sourceName:'本地',title,cover:pages[0],latest:'本地章节',progress:'',localPages:pages};st.shelf.unshift(m);save();render();toast('已加入书架')
+};
+window.openShelf=async key=>{let m=st.shelf.find(x=>x.key===key);if(!m)return;if(m.sourceId==='local'){currentDetail={...m,chapters:[{id:'local',chapter:'1',title:'本地章节'}]};$('detailSheet').innerHTML=`<div class="detailHead"><img class="detailCover" src="${m.cover}"><div><div class="sectionTitle">${esc(m.title)}</div><div class="muted">本地漫画</div><button class="primary" onclick="readLocal()" style="margin-top:12px">开始阅读</button> <button class="secondary" onclick="closeDetail()">关闭</button></div></div>`;$('detailModal').classList.add('show');return}await openDetail(m)};
+window.readLocal=()=>openReader({...currentDetail,chapter:{id:'local',chapter:'1'},pages:currentDetail.localPages});
+
+try{ensureBuiltins();render()}catch(e){
+ console.error(e);
+ try{localStorage.removeItem(K)}catch(_){}
+ st=baseState();ensureBuiltins();render();
+ toast('已恢复本地数据结构');
+}
+</script>
+
+<script>
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Service Worker 注册失败', err));
+  });
+}
+</script>
+
+</body>
+</html>
